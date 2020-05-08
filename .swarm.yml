@@ -21,14 +21,10 @@ services:
     memcached:
         image: memcached:1.6.5-alpine
         restart: unless-stopped
-        networks:
-            - sentry
 
     redis:
         image: redis:6.0.1-alpine
         restart: unless-stopped
-        networks:
-            - sentry
 
     postgres:
         image: postgres:12.2
