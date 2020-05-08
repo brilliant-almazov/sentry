@@ -1,0 +1,87 @@
+version: '3.7'
+
+x-defaults: &defaults
+    image: sentry:9.1.2
+    restart: unless-stopped
+    environment:
+        SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+        SENTRY_USE_SSL: '1'
+        SENTRY_MEMCACHED_HOST: memcached
+        SENTRY_REDIS_HOST: redis
+        SENTRY_SERVER_EMAIL: 'sentry@automagistre.ru'
+        SENTRY_POSTGRES_HOST: postgres
+        SENTRY_DB_NAME: db
+        SENTRY_DB_USER: db
+        SENTRY_DB_PASSWORD: ${DB_PASSWORD}
+        SENTRY_MAILGUN_API_KEY: ${MAILGUN_API_KEY}
+    volumes:
+        - /opt/sentry/files:/var/lib/sentry/files
+
+services:
+    memcached:
+        image: memcached:1.6.5-alpine
+        restart: unless-stopped
+        networks:
+            - sentry
+
+    redis:
+        image: redis:6.0.1-alpine
+        restart: unless-stopped
+        networks:
+            - sentry
+
+    postgres:
+        image: postgres:12.2
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: db
+            POSTGRES_USER: db
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - /opt/sentry/postgres:/var/lib/postgresql/data
+
+    web:
+        <<: *defaults
+        networks:
+            - sentry
+            - ingress
+        deploy:
+            mode: global
+            update_config:
+                order: stop-first
+                failure_action: rollback
+                parallelism: 1
+                delay: 5s
+            labels:
+                - "traefik.enable=true"
+                - "traefik.docker.network=proxy"
+                - 'traefik.frontend.rule=Host:sentry.automagistre.ru'
+                - "traefik.port=9000"
+                - "traefik.protocol=http"
+                - 'traefik.backend=sentry'
+                - "traefik.backend.loadbalancer.method=wrr"
+
+    cron:
+        <<: *defaults
+        command: run cron
+
+    worker:
+        <<: *defaults
+        command: run worker
+
+    migration:
+        <<: *defaults
+        command: sentry upgrade
+        deploy:
+            mode: replicated
+            replicas: 1
+            restart_policy:
+                condition: none
+
+networks:
+    default:
+        driver: overlay
+        name: sentry
+    ingress:
+        external: true
+        name: proxy
