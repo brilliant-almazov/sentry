@@ -39,7 +39,7 @@ services:
     web:
         <<: *defaults
         networks:
-            - sentry
+            - default
             - ingress
         deploy:
             mode: global
