@@ -23,7 +23,7 @@ x-defaults: &defaults
 
 services:
     memcached:
-        image: memcached:1.6.5-alpine
+        image: memcached:1.6.9-alpine
         restart: unless-stopped
 
     redis:
