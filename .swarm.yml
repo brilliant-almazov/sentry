@@ -53,6 +53,7 @@ services:
                 parallelism: 1
                 delay: 5s
             labels:
+                - "traefik.enable=true"
                 - "traefik.http.routers.automagistre-sentry.rule=Host(`sentry.automagistre.ru`)"
                 - "traefik.http.routers.automagistre-sentry.entrypoints=websecure"
                 - "traefik.http.routers.automagistre-sentry.tls=true"
